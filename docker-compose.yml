@@ -1,0 +1,226 @@
+---
+version: '2'
+services:
+  plex:
+    image: linuxserver/plex
+    container_name: plex
+    volumes:
+      - ${APPDIR}/plex:/config
+      - ${APPDIR}/plex/transcode:/transcode
+      - ${DATADIR}:/data
+    network_mode: host
+    restart: always
+    environment:
+      - VERSION=latest
+      - PUID=${PUID}
+      - PGID=${PGID}
+  sonarr:
+    image: linuxserver/sonarr
+    container_name: sonarr
+    volumes:
+      - ${APPDIR}/sonarr:/config
+      - /etc/localtime:/etc/localtime:ro
+      - ${DATADIR}:/tv
+    restart: always
+    ports:
+      - 8989:8989
+    environment:
+      - TZ=${TZ}
+      - PUID=${PUID}
+      - PGID=${PGID}
+  radarr:
+    image: linuxserver/radarr
+    container_name: radarr
+    volumes:
+      - ${APPDIR}/radarr:/config
+      - /etc/localtime:/etc/localtime:ro
+      - ${DATADIR}:/movies
+    restart: always
+    ports:
+      - 7878:7878
+    environment:
+      - PGID=${PGID}
+      - PUID=${PUID}
+      - TZ=${TZ}
+  ombi:
+    image: linuxserver/ombi
+    container_name: ombi
+    volumes:
+      - ${APPDIR}/ombi:/config
+    restart: always
+    ports:
+      - 3579:3579
+    environment:
+      - PGID=${PGID}
+      - PUID=${PUID}
+      - TZ=${TZ}
+  qbittorrent:
+    image: linuxserver/qbittorrent
+    container_name: qbittorrent
+    volumes:
+      - ${APPDIR}/qbittorrent:/config
+      - ${DATADIR}/downloads:/downloads
+      - ${DATADIR}/watch:/watch
+    restart: always
+    network_mode: host
+    environment:
+      - PGID=${PGID}
+      - PUID=${PUID}
+      - TZ=${TZ}
+      - WEBUI_PORT=8090
+  jackett:
+    image: linuxserver/jackett
+    container_name: jackett
+    volumes:
+      - ${APPDIR}/jackett:/config
+      - ${DATADIR}/watch:/downloads
+      - /etc/localtime:/etc/localtime:ro
+    restart: always
+    ports:
+      - 9117:9117
+    environment:
+      - PGID=${PGID}
+      - PUID=${PUID}
+      - TZ=${TZ}
+  nextcloud:
+    image: linuxserver/nextcloud
+    container_name: nextcloud
+    restart: always
+    volumes:
+      - ${APPDIR}/nextcloud:/config
+      - ${DATADIR}/cloud:/data
+    ports:
+      - 8443:443
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+  ipsec:
+    image: hwdsl2/ipsec-vpn-server
+    container_name: ipsec
+    privileged: true
+    restart: always
+    ports:
+      - 500:500/udp
+      - 4500:4500/udp
+    volumes:
+      - /lib/modules:/lib/modules:ro
+    env_file:
+      - ${APPDIR}/vpn.env
+  guacd:
+    container_name: guacd
+    restart: always
+    image: guacamole/guacd
+  guacamole:
+    container_name: guacamole
+    restart: always
+    image: guacamole/guacamole
+    ports:
+      - 8080:8080
+    links:
+      - mysql
+      - guacd
+    environment:
+      - MYSQL_HOSTNAME=${MYSQL_HOSTNAME}
+      - MYSQL_DATABASE=${MYSQL_GUCAMOLE_DB}
+      - MYSQL_USER=${MYSQL_GUACAMOLE_USER}
+      - MYSQL_PASSWORD=${MYSQL_GUACAMOLE_PASSWORD}
+      - GUACD_HOSTNAME=${GUACAMOLE_HOSTNAME}
+  mysql:
+    container_name: mysql
+    restart: always
+    image: linuxserver/mariadb
+    ports:
+      - 3306:3306
+    volumes:
+      - ${APPDIR}/mysql:/config
+    environment:
+      - PUID=${PUID}
+      - GUID=${PGID}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - TZ=${TZ}
+  nginx:
+    container_name: nginx
+    restart: always
+    image: linuxserver/nginx
+    network_mode: host
+    privileged: true
+    environment:
+      - PGID=${PGID}
+      - PUID=${PUID}
+      - TZ=${TZ}
+    volumes:
+      - ${APPDIR}/nginx:/config
+#workaround for using mailcow ssl certificates in proxyconf
+      - /opt/appdata/mailcow-dockerized/data/assets/ssl:/opt/appdata/mailcow-dockerized/data/assets/ssl
+  pihole:
+    image: pihole/pihole:latest
+    container_name: pihole
+    cap_add: 
+      - NET_ADMIN
+    dns:
+      - 127.0.0.1
+      - 1.1.1.1
+    ports:
+      - ${ALTIP}:53:53/tcp
+      - ${ALTIP}:53:53/udp
+      - ${ALTIP}:61080:80/tcp
+      - ${ALTIP}:61443:443/tcp
+    volumes:
+      - ${APPDIR}/pihole/:/etc/pihole/
+    restart: always
+  tautulli:
+    image: tautulli/tautulli
+    ports:
+      - 18181:8181
+    environment:
+      - PGID=${PGID}
+      - PUID=${PUID}
+      - TZ=${TZ}
+    volumes:
+      - ${APPDIR}/tautulli:/config
+      - ${APPDIR}/plex/Library/Application Support/Plex Media Server/Logs:/plex_logs:ro
+    restart: always
+    container_name: tautulli
+  bazarr:
+    image: linuxserver/bazarr
+    container_name: bazarr
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ${APPDIR}/bazarr:/config
+      - ${DATADIR}/movies:/movies
+      - ${DATADIR}/tvseries:/tv
+    ports:
+      - 6767:6767
+    mem_limit: 2048m
+    restart: unless-stopped
+  bitwarden:
+    container_name: bitwarden
+    image: bitwardenrs/server 
+    restart: always
+    volumes:
+      - ${APPDIR}/bw-data:/data
+    ports:
+      - 22080:80
+      - 23012:3012
+    environment:
+      - WEBSOCKET_ENABLED=true # Required to use websockets
+      - SIGNUPS_ALLOWED=false
+      - ADMIN_TOKEN=${BW_ADMIN_TOKEN}
+      - DOMAIN=${BW_DOMAIN}
+  smokeping:
+    image: linuxserver/smokeping
+    container_name: smokeping
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ${APPDIR}/sping:/config
+      - ${APPDIR}/sping_data:/data
+    ports:
+      - 127.0.0.1:2380:80
+    restart: unless-stopped
