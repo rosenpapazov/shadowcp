@@ -1,0 +1,48 @@
+server {
+  listen 80 default_server;
+  listen [::]:80 default_server;
+  server_name mx.example.com autodiscover.*;
+  return 301 https://$host$request_uri;
+}
+server {
+  listen 80;
+  listen [::]:80;
+  server_name autoconfig.*;
+  rewrite ^/(.*)$ /autoconfig.php last;
+  location / {
+    proxy_pass http://127.0.0.1:8880/;
+    proxy_set_header Host $http_host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    client_max_body_size 0;
+  }
+}
+server {
+  listen 443 ssl;
+  listen [::]:443 ssl;
+  server_name mx.example.com autodiscover.* autoconfig.*;
+
+  ssl_certificate /opt/appdata/mailcow-dockerized/data/assets/ssl/cert.pem;
+  ssl_certificate_key /opt/appdata/mailcow-dockerized/data/assets/ssl/key.pem;
+  ssl_protocols TLSv1.2 TLSv1.3;
+  ssl_ecdh_curve secp384r1;
+    ssl_stapling_verify on;
+    ssl_prefer_server_ciphers on;
+    ssl_dhparam dhparam.pem;
+    resolver 8.8.8.8 8.8.4.4;
+    ssl_stapling on;
+
+#  ssl_ciphers HIGH:!aNULL:!MD5;
+#  ssl_ciphers 'AES256+EECDH:AES256+EDH:!aNULL:!MD5:!3DES:!CAMELLIA:!AES128';
+  ssl_ciphers 'AES256+EECDH:AES256+EDH:!aNULL:!MD5:!3DES:!CAMELLIA:!AES128';
+#  ssl_ciphers 'EECDH+CHACHA20:EECDH+AESGCM:EECDH+AESCCM:!aNULL:!MD5:!3DES:!CAMELLIA:!AES128';
+  location / {
+      proxy_pass http://127.0.0.1:8880/;
+      proxy_set_header Host $http_host;
+      proxy_set_header X-Real-IP $remote_addr;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $scheme;
+      client_max_body_size 0;
+  }
+}

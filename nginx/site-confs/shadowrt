@@ -1,0 +1,56 @@
+#SSL redirect
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name shadowrt.example.com;
+    return 301 https://$server_name$request_uri;
+}
+
+geo $trusted_user {                                                                                                                                                                                                                       
+  default 0;                                                                                                                                                                                                                                
+  4.3.2.1/32 1;                                                                                                                                                                                                                        
+  5.6.0.0/16 1;                                                                                                                                                                                                                          
+  }  
+#SSL
+
+server {
+        listen 443 ssl;
+        listen [::]:443 ssl;
+        server_name shadowrt.example.com;
+        access_log /var/log/nginx/var.net-access.log;
+        error_log /var/log/nginx/var.net-error.log;
+    if ($host != $server_name) {
+        #return 404 "this is an invalid request";
+        return	444;
+    }
+#    if ($remote_addr = 4.3.2.1) {
+#    return 308 https://shadowrt.example.com:8443/;
+#    }
+#    if ($remote_addr = 5.6.0.0/16) {
+#    return 308 https://shadowrt.example.com:8443;
+#    }
+    if ($trusted_user) {
+    return 308 https://shadowrt.example.com:8443/;
+    }
+
+    return 444;
+    rewrite_log on;
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    #ssl_session_cache shared:SSL:50m;
+    ssl_protocols TLSv1.2;
+	ssl_session_timeout 5m;    
+	ssl_certificate example.com/fullchain.pem;
+    ssl_certificate_key example.com/privkey.pem;
+#    ssl_ciphers 'HIGH:!aNULL:!MD5:!3DES:!CAMELLIA:!AES128';
+    ssl_ciphers 'EECDH+CHACHA20:EECDH+AESGCM:EECDH+AESCCM:!aNULL:!MD5:!3DES:!CAMELLIA:!AES128';
+    add_header X-Content-Type-Options nosniff;
+    #add_header X-XSS-Protection "1; mode=block";
+    ssl_ecdh_curve secp384r1;
+    ssl_stapling_verify on;
+    ssl_prefer_server_ciphers on;
+    ssl_dhparam dhparam.pem;
+    resolver 8.8.8.8 8.8.4.4;
+    ssl_stapling on;
+    ssl_trusted_certificate example.com/fullchain.pem;
+}
