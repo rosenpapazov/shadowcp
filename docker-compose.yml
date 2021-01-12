@@ -55,7 +55,7 @@ services:
       - PUID=${PUID}
       - TZ=${TZ}
   qbittorrent:
-    image: linuxserver/qbittorrent
+    image: linuxserver/qbittorrent:version-14.2.5.99202004250119-7015-2c65b79ubuntu18.04.1
     container_name: qbittorrent
     volumes:
       - ${APPDIR}/qbittorrent:/config
@@ -225,3 +225,17 @@ services:
     ports:
       - 127.0.0.1:2380:80
     restart: unless-stopped
+  ytdl:
+    environment: 
+      ALLOW_CONFIG_MUTATIONS: 'true'
+    restart: always
+    container_name: ytdl
+    volumes:
+      - ${APPDIR}/ytdl:/app/appdata
+      - ${DATADIR}/youtube/music:/app/audio
+      - ${DATADIR}/youtube/videos:/app/video
+      - ${DATADIR}/youtube/subscriptions:/app/subscriptions
+      - ${DATADIR}/youtube/users:/app/users
+    ports:
+      - "18998:17442"
+    image: tzahi12345/youtubedl-material:latest
