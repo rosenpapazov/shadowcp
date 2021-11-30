@@ -55,7 +55,8 @@ services:
       - PUID=${PUID}
       - TZ=${TZ}
   qbittorrent:
-    image: linuxserver/qbittorrent:version-14.2.5.99202004250119-7015-2c65b79ubuntu18.04.1
+          # image: linuxserver/qbittorrent:version-14.2.5.99202004250119-7015-2c65b79ubuntu18.04.1
+    image: linuxserver/qbittorrent
     container_name: qbittorrent
     volumes:
       - ${APPDIR}/qbittorrent:/config
@@ -239,3 +240,34 @@ services:
     ports:
       - "18998:17442"
     image: tzahi12345/youtubedl-material:latest
+  speedtest:
+    container_name: speedtest
+    image: henrywhitaker3/speedtest-tracker
+    ports:
+        - 8765:80
+    volumes:
+        - ${APPDIR}/speedtest:/config
+    environment:
+        - TZ=${TZ}
+        - PGID=${PGID}
+        - PUID=${PUID}
+        - AUTH=true
+        - OOKLA_EULA_GDPR=true
+    logging:
+        driver: "json-file"
+        options:
+            max-file: "10"
+            max-size: "200k"
+    restart: unless-stopped
+  prowlarr:
+    image: ghcr.io/linuxserver/prowlarr:develop
+    container_name: prowlarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Sofia
+    volumes:
+      - ${APPDIR}/prowlar:/config
+    ports:
+      - 9696:9696
+    restart: unless-stopped
